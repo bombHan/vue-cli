@@ -1,5 +1,6 @@
 <template>
   <a-form-model
+    ref="searchForm"
     layout="inline"
     :model="formInline"
     @submit="handleSubmit"
@@ -19,7 +20,7 @@
       ></a-input>
       <!-- select 下拉框 -->
       <a-select
-        style="width: 174px"
+        style="width: 200px"
         v-if="item.type == 'select'"
         v-model="formInline[item.name]"
         :mode="item.mode ? item.mode : 'default'"
@@ -38,7 +39,7 @@
       </a-select>
       <!-- select group 下拉框 -->
       <a-select
-        style="width: 174px"
+        style="width: 200px"
         v-if="item.type == 'selectGroup'"
         v-model="formInline[item.name]"
         :mode="item.mode ? item.mode : 'default'"
@@ -81,7 +82,7 @@
           v-if="item.compact == 'input'"
           v-model="formInline[item.name]"
           :placeholder="item.placeholder"
-          style="width: 174px"
+          style="width: 200px"
         />
         <a-range-picker
           v-if="item.compact == 'datepicker'"
@@ -129,30 +130,18 @@
         v-model="formInline[item.name]"
         :valueFormat="item.format ? item.format : 'YYYY-MM-DD'"
         :ranges="item.ranges ? item.ranges : dateRanges"
+        :disabledDate="item.disabledDate"
       />
       <a-week-picker
         v-if="item.type == 'weekpicker'"
         v-model="formInline[item.name]"
-      />
-      <a-range-picker
-        style="width: 200px"
-        v-if="item.type == 'monthrangepicker'"
-        :value="formInline[item.name]"
-        format="YYYY-MM"
-        :mode="mode"
-        @panelChange="
-          (value, mode) => {
-            handlePanelChange(value, mode, item.name);
-          }
-        "
-        :allow-clear="false"
       />
 
       <!-- treeselect -->
       <a-tree-select
         v-if="item.type == 'treeselect'"
         v-model="formInline[item.name]"
-        style="width: 165px"
+        style="width: 200px"
         :tree-data="item.treeData || []"
         tree-checkable
         :placeholder="item.placeholder || '请选择'"
@@ -160,7 +149,7 @@
       />
 
       <!-- 省市区联动 -->
-      <!-- <a-cascader
+      <a-cascader
         v-if="item.type == 'areaCascader'"
         :options="areaDictionary"
         :field-names="item.fieldNames"
@@ -168,7 +157,7 @@
         change-on-select
         @change="areaOnChange"
         v-model="formInline[item.name]"
-      />-->
+      />
 
       <!-- 普通级联 -->
       <a-cascader
@@ -181,28 +170,47 @@
         @change="referOnChange"
       />
     </a-form-model-item>
-    <a-form-model-item>
-      <a-button type="primary" html-type="submit">查询</a-button>
-    </a-form-model-item>
+    <!-- <div> -->
+      <a-button
+        type="primary"
+        html-type="submit"
+        :style="{ marginRight: '10px' }"
+        >查询</a-button
+      >
+      <a-button type="primary" @click="reset">重置</a-button>
+    <!-- </div> -->
   </a-form-model>
 </template>
 <script>
 // :ranges=""
 import moment from "moment";
-// import { areaDictionary } from "@/utils/areaDictionary";
+import { areaDictionary } from "./areaDictionary";
 export default {
   props: {
     formList: {
       type: Array,
+      default: () => [],
     },
     defaultFormValues: {
       type: Object,
+    },
+    changeImmediate: {
+      type: Boolean,
+      default: false,
     },
   },
   watch: {
     defaultFormValues: {
       handler(val, oldVal) {
-        this.formInline = Object.assign({}, this.formInline, val);
+        // this.formInline = Object.assign({}, this.formInline, val);
+      },
+      deep: true,
+    },
+    formInline: {
+      handler(val, oldVal) {
+        if (this.changeImmediate) {
+          this.$emit("prevHandleSubmit", this.formInline); //表单数据变化时
+        }
       },
       deep: true,
     },
@@ -216,8 +224,7 @@ export default {
         本月: [moment().startOf("month"), moment().endOf("month")],
         本季度: [moment().startOf("quarter"), moment().endOf("quarter")],
       },
-      mode: ["month", "month"], // monthrangepicker专用
-      // areaDictionary
+      areaDictionary,
     };
   },
   created() {
@@ -229,7 +236,7 @@ export default {
     this.formList.map((item, index) => {
       if (
         item.type == "inputCompact" &&
-        !(this.formInline[item.name] && thisformInline[item.name].length)
+        !(this.formInline[item.name] && this.formInline[item.name].length)
       ) {
         this.formInline[item.name] = [undefined, undefined];
       } else if (
@@ -241,28 +248,30 @@ export default {
         // this.formInline[item.name] = null;
       } else if (item.type == "rangepicker") {
         // this.formInline[item.name] = [null, null];
-      } else if (item.type == "monthrangepicker") {
       }
     });
   },
   methods: {
+    reset() {
+      console.log(99999)
+      // this.$refs.searchForm.resetFields();
+      this.formInline={}
+    },
     handleSubmit(e) {
-      // console.log(this.formInline);
-      this.formList
-        .filter((item) => {
-          return item.valueToString;
-        })
-        .forEach((item) => {
-          if (this.formInline[item.name]) {
-            this.formInline[item.valueToString[0]] = this.formInline[
-              item.name
-            ][0];
-            this.formInline[item.valueToString[1]] = this.formInline[
-              item.name
-            ][1];
+      let obj = Object.assign({}, this.formInline);
+      this.formList.map((item, index) => {
+        if (item.type == "rangepicker") {
+          for (let key in obj) {
+            if (key == item.name) {
+              console.log(key, obj[key]);
+              obj[key] = obj[key].join(",");
+            }
           }
-        });
-      this.$emit("prevHandleSubmit", this.formInline);
+          // item.name = item.name;
+        }
+      });
+      console.log(obj);
+      this.$emit("filterSubmit"); //点击查询按钮时
     },
     areaOnChange(value) {
       console.log(value);
@@ -273,18 +282,18 @@ export default {
       console.log(value);
       this.$emit("prevReferOnChange", value);
     },
-    handlePanelChange(value, mode, name) {
-      console.log(value, mode, name);
-      this.formInline[name] = value;
-      this.mode = [
-        mode[0] === "date" ? "month" : mode[0],
-        mode[1] === "date" ? "month" : mode[1],
-      ];
-    },
   },
 };
 </script>
-    },
-  }
-};
-</script>
+<style lang="less" scoped>
+.ant-form {
+  padding: 10px 15px;
+  // border-bottom: 1px solid #e8e8e8;
+}
+.ant-form-inline .ant-form-item {
+  margin-bottom: 10px;
+}
+.ant-btn{
+  margin-top: 3px;
+}
+</style>
