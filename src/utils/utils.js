@@ -151,6 +151,24 @@ function drawBase64Image (img) {
   return dataURL
 }
 
+//根据sku算法获取skulist， sku方法入参不能传数组要用...解构
+function getSkuList(arr) { // 传入[[1,2,3], [4,5],[6]], 返回[[1, 4, 6],[1, 5, 6],[2, 4, 6],[2, 5, 6],[3, 4, 6],[3, 5, 6]]
+  const res = sku(...arr);
+  return res;
+}
+
+// sku算法
+function sku() {
+  return Array.prototype.reduce.call(arguments, (a,b)=>{
+      let res = [];
+      a.forEach((item) => {
+          b.forEach((item1) => {
+              res.push(item.concat([item1]))
+          })
+      });
+      return res;
+  },[[]])
+}
 
 let utils = {
   objecToQueryString,
@@ -160,7 +178,9 @@ let utils = {
   exportExcel,
   downloadByBlob,
   copyString,
-  drawBase64Image
+  drawBase64Image,
+  getSkuList,
+  sku,
 }
 
 export default utils;
