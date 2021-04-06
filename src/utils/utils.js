@@ -170,6 +170,34 @@ function sku() {
   },[[]])
 }
 
+// 判断相等
+function equal(a,b) {
+  let aType = typeof a;
+  let bType = typeof b;
+  let flag = true;
+  if(aType !== bType){
+    flag = false;
+  } else {
+    if (typeof(a) === 'object') {
+      for(let i in a) {
+        console.log(a[i], b[i])
+        if(typeof(a[i]) === 'object') {
+          if(!equal(a[i],b[i])) {
+            flag = false;
+          }
+        } else {
+          if(a[i] !==b[i]) {
+            flag = false;
+          }
+        }
+      }
+    } else {
+      flag = a === b
+    }
+  }
+  return flag;
+}
+
 let utils = {
   objecToQueryString,
   deepClone,
@@ -181,6 +209,7 @@ let utils = {
   drawBase64Image,
   getSkuList,
   sku,
+  equal,
 }
 
 export default utils;
